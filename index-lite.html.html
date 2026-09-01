@@ -1,0 +1,472 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>สันติธรรมวิทยา - งานเมาลิดนบี (Lite & Mobile Ready)</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Kanit:wght@400;500;600;800&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Amiri&display=swap');
+
+        :root {
+            --sky-top: #030812; --sky-mid: #0a1426; --sky-horizon: #172d42; --sky-glow: #24465c;
+            --gold-light: #FDF0B0; --gold-main: #D4AF37; --gold-dark: #997A15;
+            --p1-text: #FF8A8A; --p2-text: #8AB4FF;
+            /* สูตรคำนวณไพ่ให้พอดีทั้งจอทีวีและจอมือถือ */
+            --card-size: clamp(65px, min(21vw, 14vh), 160px); 
+        }
+
+        body {
+            margin: 0; padding: 0; font-family: 'Kanit', sans-serif;
+            background: linear-gradient(to bottom, var(--sky-top) 0%, var(--sky-mid) 40%, var(--sky-horizon) 75%, var(--sky-glow) 100%);
+            color: var(--gold-light); display: flex; flex-direction: column; align-items: center; justify-content: center;
+            height: 100vh; overflow: hidden; user-select: none; -webkit-user-select: none; touch-action: none; transition: background 0.5s ease;
+        }
+
+        /* ของประดับฉากหลัง (แบบไม่ขยับ ประหยัดสเปค) */
+        .lantern-wrapper { position: absolute; top: -10px; pointer-events: none; z-index: 2; opacity: 0.9; }
+        .lantern-svg { width: 100%; height: auto; }
+        .top-l1 { left: 3%; width: 100px; } .top-l2 { left: 18%; width: 75px; top: -20px; }
+        .top-l3 { left: 35%; width: 90px; } .top-l4 { left: 50%; width: 120px; top: -15px;}
+        .top-l5 { right: 35%; width: 90px; } .top-l6 { right: 18%; width: 75px; top: -25px;}
+        .top-l7 { right: 3%; width: 100px; }
+
+        .pillar-wrapper { position: absolute; bottom: -5px; pointer-events: none; z-index: 2; opacity: 0.9; }
+        .pillar-svg { width: 100%; height: auto; }
+        .bot-l1 { left: 2%; width: 85px; } .bot-l2 { left: 18%; width: 65px; }
+        .bot-l3 { left: 35%; width: 75px; } .bot-l4 { right: 35%; width: 75px; }
+        .bot-l5 { right: 18%; width: 65px; } .bot-l6 { right: 2%; width: 85px; }
+
+        .bg-decoration { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 0; opacity: 0.15; background-image: url('data:image/svg+xml;utf8,<svg width="100" height="100" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg"><text x="15" y="45" font-size="30" fill="%23D4AF37">⭐</text><text x="65" y="80" font-size="20" fill="%23D4AF37">🌙</text></svg>'); }
+
+        #btn-fullscreen { position: absolute; top: 15px; right: 15px; z-index: 9999; background: rgba(255, 255, 255, 0.1); color: var(--gold-main); border: 2px solid var(--gold-main); border-radius: 12px; width: 55px; height: 55px; font-size: 2rem; cursor: pointer; padding: 0; display: flex; align-items: center; justify-content: center; }
+        
+        .screen { z-index: 10; display: flex; flex-direction: column; align-items: center; justify-content: center; width: 100%; height: 100%; text-align: center; }
+        
+        /* ขนาดฟอนต์พื้นฐาน (สำหรับทีวีและคอมพิวเตอร์) */
+        h1 { font-size: 5.5rem; margin-bottom: 10px; color: var(--gold-main); text-shadow: 2px 4px 8px rgba(0,0,0,0.9); line-height: 1.1; font-weight: 800; }
+        h2 { font-size: 2.8rem; color: var(--gold-light); margin-top: 0; font-weight: 500; text-shadow: 1px 2px 5px rgba(0,0,0,0.9); }
+
+        .btn-group { display: flex; gap: 30px; margin-top: 40px; flex-wrap: wrap; justify-content: center; z-index: 20; }
+        button { padding: 25px 50px; font-size: 2.5rem; font-weight: 800; font-family: 'Kanit', sans-serif; border: 4px solid var(--gold-light); border-radius: 25px; cursor: pointer; background-color: #24465c; color: white; transition: transform 0.1s;}
+        button:active { transform: scale(0.95); }
+        .btn-mode-1 { background: linear-gradient(135deg, var(--gold-main), var(--gold-dark)); color: var(--sky-top); }
+        .btn-mode-2 { background: rgba(255,255,255,0.1); color: var(--gold-light); border-color: var(--gold-main); }
+        .btn-diff { background: rgba(0,0,0,0.6); color: var(--gold-light); border-color: var(--gold-main); }
+        .btn-back { background: rgba(255,255,255,0.15); color: white; border-color: rgba(255,255,255,0.3); margin-top: 40px; font-size: 2rem; padding: 15px 40px; }
+        
+        .btn-start-play { background: #00C853; color: white; border-color: white; font-size: 2.8rem; padding: 20px 60px; }
+        .btn-giveup { background: #D32F2F; color: white; border-color: #FFCDD2; font-size: 2rem; padding: 15px 40px; }
+
+        #game-area { display: none; flex-direction: column; align-items: center; justify-content: center; width: 100%; height: 100%; z-index: 10; }
+        #status-bar { background: rgba(0,0,0,0.7); color: var(--gold-light); padding: 15px 50px; border-radius: 50px; border: 2px solid var(--gold-main); font-size: 3rem; font-weight: bold; margin-bottom: 25px; text-align: center; }
+
+        @keyframes heartbeat-lite {
+            0% { background: rgba(229, 57, 53, 0.4); border-color: #FF5252; color: #FFF; }
+            50% { background: rgba(229, 57, 53, 0.8); border-color: #FF0000; color: #FFF; }
+            100% { background: rgba(229, 57, 53, 0.4); border-color: #FF5252; color: #FFF; }
+        }
+        .tense-warning { animation: heartbeat-lite 1s infinite; }
+
+        #game-board { display: grid; grid-gap: 15px; perspective: 1000px; position: relative; margin: 0 auto; z-index: 10; transition: opacity 0.4s ease;}
+        #controls-container { height: 100px; display: flex; align-items: center; justify-content: center; margin-top: 30px; width: 100%; z-index: 10;}
+        
+        .card { position: relative; width: var(--card-size); height: var(--card-size); background: var(--gold-main); border: 4px solid var(--gold-light); border-radius: 20px; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: transform 0.3s; transform-style: preserve-3d; }
+        .card::before { content: ''; position: absolute; width: 65%; height: 65%; background-image: url('logo.png'); background-size: contain; background-repeat: no-repeat; background-position: center; opacity: 0.9; pointer-events: none; }
+        .card.flipped { background: #FFFFFF; transform: rotateY(180deg); border-color: var(--gold-main); }
+        .card.flipped::before { display: none; }
+        .card.matched { background: var(--gold-light) !important; transform: rotateY(180deg) scale(1.05); pointer-events: none; border-color: #FFF; }
+        .card.error { background: #FFCDD2 !important; border-color: #D32F2F !important; }
+
+        #setup-screen, #result-screen { display: none; }
+        #result-screen { background: rgba(3, 8, 18, 0.95); z-index: 50; }
+        #result-screen h1 { font-size: 7rem; margin-bottom: 0;}
+        .dua-text { font-family: 'Amiri', serif; font-size: 4.5rem; color: var(--gold-main); margin: 20px 0 5px 0; font-weight: normal; }
+        .dua-translate { font-size: 2.2rem; color: #FFF; margin-bottom: 20px; font-style: italic; }
+        .result-detail { font-size: 3rem; margin-bottom: 20px; color: #FFF;}
+
+        /* ========================================================= */
+        /* 📱 RESPONSIVE DESIGN FOR MOBILE PHONES (No-Scroll Mode) */
+        /* ========================================================= */
+        @media (max-width: 768px), (max-height: 800px) {
+            h1 { font-size: 2.2rem; margin-bottom: 5px; }
+            h2 { font-size: 1.2rem; margin-top: 5px; margin-bottom: 10px; }
+            
+            /* ปรับปุ่มให้ซ้อนกันและเล็กลง */
+            .btn-group { gap: 15px; margin-top: 20px; flex-direction: column; align-items: center; }
+            button { font-size: 1.4rem; padding: 15px 30px; width: 85vw; max-width: 320px; border-width: 3px; border-radius: 18px;}
+            .btn-back { font-size: 1.2rem; padding: 10px 20px; width: auto; margin-top: 20px; }
+            
+            /* ปรับขนาดส่วนควบคุมเกม */
+            #status-bar { font-size: 1.4rem; padding: 10px 25px; margin-bottom: 15px; border-width: 2px;}
+            #game-board { grid-gap: 8px; } /* ลดช่องว่างไพ่ */
+            .card { border-width: 2px; border-radius: 12px; }
+            #controls-container { height: 70px; margin-top: 15px; }
+            .btn-start-play { font-size: 1.6rem; padding: 12px 40px; width: auto; }
+            .btn-giveup { font-size: 1.2rem; padding: 10px 20px; width: auto; }
+            
+            /* ปรับขนาดหน้าสรุปผล */
+            #result-screen h1 { font-size: 3rem; }
+            .dua-text { font-size: 2.5rem; }
+            .dua-translate { font-size: 1.2rem; margin-bottom: 15px; padding: 0 15px;}
+            .result-detail { font-size: 1.3rem; margin-bottom: 15px; }
+            
+            #btn-fullscreen { top: 10px; right: 10px; width: 40px; height: 40px; font-size: 1.2rem; border-radius: 8px;}
+            
+            /* ซ่อนตะเกียงบางส่วนบนมือถือเพื่อไม่ให้เกะกะ */
+            .top-l1, .top-l7, .bot-l1, .bot-l6 { display: none; }
+        }
+    </style>
+</head>
+<body>
+    <!-- ไฟล์เสียง -->
+    <audio id="sfx-correct" src="correct.mp3" preload="auto"></audio>
+    <audio id="sfx-wrong" src="wrong.mp3" preload="auto"></audio>
+    <audio id="sfx-win" src="win.mp3" preload="auto"></audio>
+    <audio id="sfx-gameover" src="gameover.mp3" preload="auto"></audio>
+    <audio id="sfx-tick" src="tick.mp3" preload="auto"></audio>
+
+    <div class="bg-decoration"></div>
+
+    <!-- ตะเกียงประดับ -->
+    <div class="lantern-wrapper top-l1"><svg class="lantern-svg" viewBox="0 0 100 150" xmlns="http://www.w3.org/2000/svg"><line x1="50" y1="0" x2="50" y2="25" stroke="#D4AF37" stroke-width="4"/><path d="M35,25 Q50,0 65,25 Z" fill="#D4AF37"/><rect x="30" y="25" width="40" height="8" rx="2" fill="#997A15"/><polygon points="25,33 75,33 85,95 15,95" fill="rgba(212,175,55,0.3)" stroke="#D4AF37" stroke-width="4"/><circle cx="50" cy="70" r="12" fill="#FDF0B0"/><path d="M47,60 Q50,50 53,60 Q55,70 50,75 Q45,70 47,60 Z" fill="#FFF"/><rect x="20" y="95" width="60" height="8" rx="2" fill="#997A15"/><path d="M35,103 Q50,115 65,103 Z" fill="#D4AF37"/></svg></div>
+    <div class="lantern-wrapper top-l2"><svg class="lantern-svg" viewBox="0 0 100 150" xmlns="http://www.w3.org/2000/svg"><line x1="50" y1="0" x2="50" y2="25" stroke="#D4AF37" stroke-width="4"/><path d="M35,25 Q50,0 65,25 Z" fill="#D4AF37"/><rect x="30" y="25" width="40" height="8" rx="2" fill="#997A15"/><polygon points="25,33 75,33 85,95 15,95" fill="rgba(212,175,55,0.3)" stroke="#D4AF37" stroke-width="4"/><circle cx="50" cy="70" r="12" fill="#FDF0B0"/><path d="M47,60 Q50,50 53,60 Q55,70 50,75 Q45,70 47,60 Z" fill="#FFF"/><rect x="20" y="95" width="60" height="8" rx="2" fill="#997A15"/><path d="M35,103 Q50,115 65,103 Z" fill="#D4AF37"/></svg></div>
+    <div class="lantern-wrapper top-l3"><svg class="lantern-svg" viewBox="0 0 100 150" xmlns="http://www.w3.org/2000/svg"><line x1="50" y1="0" x2="50" y2="25" stroke="#D4AF37" stroke-width="4"/><path d="M35,25 Q50,0 65,25 Z" fill="#D4AF37"/><rect x="30" y="25" width="40" height="8" rx="2" fill="#997A15"/><polygon points="25,33 75,33 85,95 15,95" fill="rgba(212,175,55,0.3)" stroke="#D4AF37" stroke-width="4"/><circle cx="50" cy="70" r="12" fill="#FDF0B0"/><path d="M47,60 Q50,50 53,60 Q55,70 50,75 Q45,70 47,60 Z" fill="#FFF"/><rect x="20" y="95" width="60" height="8" rx="2" fill="#997A15"/><path d="M35,103 Q50,115 65,103 Z" fill="#D4AF37"/></svg></div>
+    <div class="lantern-wrapper top-l4"><svg class="lantern-svg" viewBox="0 0 100 150" xmlns="http://www.w3.org/2000/svg"><line x1="50" y1="0" x2="50" y2="25" stroke="#D4AF37" stroke-width="4"/><path d="M35,25 Q50,0 65,25 Z" fill="#D4AF37"/><rect x="30" y="25" width="40" height="8" rx="2" fill="#997A15"/><polygon points="25,33 75,33 85,95 15,95" fill="rgba(212,175,55,0.3)" stroke="#D4AF37" stroke-width="4"/><circle cx="50" cy="70" r="12" fill="#FDF0B0"/><path d="M47,60 Q50,50 53,60 Q55,70 50,75 Q45,70 47,60 Z" fill="#FFF"/><rect x="20" y="95" width="60" height="8" rx="2" fill="#997A15"/><path d="M35,103 Q50,115 65,103 Z" fill="#D4AF37"/></svg></div>
+    <div class="lantern-wrapper top-l5"><svg class="lantern-svg" viewBox="0 0 100 150" xmlns="http://www.w3.org/2000/svg"><line x1="50" y1="0" x2="50" y2="25" stroke="#D4AF37" stroke-width="4"/><path d="M35,25 Q50,0 65,25 Z" fill="#D4AF37"/><rect x="30" y="25" width="40" height="8" rx="2" fill="#997A15"/><polygon points="25,33 75,33 85,95 15,95" fill="rgba(212,175,55,0.3)" stroke="#D4AF37" stroke-width="4"/><circle cx="50" cy="70" r="12" fill="#FDF0B0"/><path d="M47,60 Q50,50 53,60 Q55,70 50,75 Q45,70 47,60 Z" fill="#FFF"/><rect x="20" y="95" width="60" height="8" rx="2" fill="#997A15"/><path d="M35,103 Q50,115 65,103 Z" fill="#D4AF37"/></svg></div>
+    <div class="lantern-wrapper top-l6"><svg class="lantern-svg" viewBox="0 0 100 150" xmlns="http://www.w3.org/2000/svg"><line x1="50" y1="0" x2="50" y2="25" stroke="#D4AF37" stroke-width="4"/><path d="M35,25 Q50,0 65,25 Z" fill="#D4AF37"/><rect x="30" y="25" width="40" height="8" rx="2" fill="#997A15"/><polygon points="25,33 75,33 85,95 15,95" fill="rgba(212,175,55,0.3)" stroke="#D4AF37" stroke-width="4"/><circle cx="50" cy="70" r="12" fill="#FDF0B0"/><path d="M47,60 Q50,50 53,60 Q55,70 50,75 Q45,70 47,60 Z" fill="#FFF"/><rect x="20" y="95" width="60" height="8" rx="2" fill="#997A15"/><path d="M35,103 Q50,115 65,103 Z" fill="#D4AF37"/></svg></div>
+    <div class="lantern-wrapper top-l7"><svg class="lantern-svg" viewBox="0 0 100 150" xmlns="http://www.w3.org/2000/svg"><line x1="50" y1="0" x2="50" y2="25" stroke="#D4AF37" stroke-width="4"/><path d="M35,25 Q50,0 65,25 Z" fill="#D4AF37"/><rect x="30" y="25" width="40" height="8" rx="2" fill="#997A15"/><polygon points="25,33 75,33 85,95 15,95" fill="rgba(212,175,55,0.3)" stroke="#D4AF37" stroke-width="4"/><circle cx="50" cy="70" r="12" fill="#FDF0B0"/><path d="M47,60 Q50,50 53,60 Q55,70 50,75 Q45,70 47,60 Z" fill="#FFF"/><rect x="20" y="95" width="60" height="8" rx="2" fill="#997A15"/><path d="M35,103 Q50,115 65,103 Z" fill="#D4AF37"/></svg></div>
+
+    <div class="pillar-wrapper bot-l1"><svg class="pillar-svg" viewBox="0 0 100 200" xmlns="http://www.w3.org/2000/svg"><polygon points="20,200 80,200 65,160 35,160" fill="#997A15"/><rect x="42" y="100" width="16" height="60" fill="#D4AF37"/><polygon points="35,100 65,100 75,115 25,115" fill="#997A15"/><polygon points="20,40 80,40 90,100 10,100" fill="rgba(212,175,55,0.3)" stroke="#D4AF37" stroke-width="4"/><path d="M30,30 Q50,0 70,30 Z" fill="#D4AF37"/><rect x="25" y="30" width="50" height="10" rx="4" fill="#997A15"/><circle cx="50" cy="75" r="16" fill="#FDF0B0"/><path d="M46,55 Q50,40 54,55 Q58,75 50,85 Q42,75 46,55 Z" fill="#FFF"/></svg></div>
+    <div class="pillar-wrapper bot-l2"><svg class="pillar-svg" viewBox="0 0 100 200" xmlns="http://www.w3.org/2000/svg"><polygon points="20,200 80,200 65,160 35,160" fill="#997A15"/><rect x="42" y="100" width="16" height="60" fill="#D4AF37"/><polygon points="35,100 65,100 75,115 25,115" fill="#997A15"/><polygon points="20,40 80,40 90,100 10,100" fill="rgba(212,175,55,0.3)" stroke="#D4AF37" stroke-width="4"/><path d="M30,30 Q50,0 70,30 Z" fill="#D4AF37"/><rect x="25" y="30" width="50" height="10" rx="4" fill="#997A15"/><circle cx="50" cy="75" r="16" fill="#FDF0B0"/><path d="M46,55 Q50,40 54,55 Q58,75 50,85 Q42,75 46,55 Z" fill="#FFF"/></svg></div>
+    <div class="pillar-wrapper bot-l3"><svg class="pillar-svg" viewBox="0 0 100 200" xmlns="http://www.w3.org/2000/svg"><polygon points="20,200 80,200 65,160 35,160" fill="#997A15"/><rect x="42" y="100" width="16" height="60" fill="#D4AF37"/><polygon points="35,100 65,100 75,115 25,115" fill="#997A15"/><polygon points="20,40 80,40 90,100 10,100" fill="rgba(212,175,55,0.3)" stroke="#D4AF37" stroke-width="4"/><path d="M30,30 Q50,0 70,30 Z" fill="#D4AF37"/><rect x="25" y="30" width="50" height="10" rx="4" fill="#997A15"/><circle cx="50" cy="75" r="16" fill="#FDF0B0"/><path d="M46,55 Q50,40 54,55 Q58,75 50,85 Q42,75 46,55 Z" fill="#FFF"/></svg></div>
+    <div class="pillar-wrapper bot-l4"><svg class="pillar-svg" viewBox="0 0 100 200" xmlns="http://www.w3.org/2000/svg"><polygon points="20,200 80,200 65,160 35,160" fill="#997A15"/><rect x="42" y="100" width="16" height="60" fill="#D4AF37"/><polygon points="35,100 65,100 75,115 25,115" fill="#997A15"/><polygon points="20,40 80,40 90,100 10,100" fill="rgba(212,175,55,0.3)" stroke="#D4AF37" stroke-width="4"/><path d="M30,30 Q50,0 70,30 Z" fill="#D4AF37"/><rect x="25" y="30" width="50" height="10" rx="4" fill="#997A15"/><circle cx="50" cy="75" r="16" fill="#FDF0B0"/><path d="M46,55 Q50,40 54,55 Q58,75 50,85 Q42,75 46,55 Z" fill="#FFF"/></svg></div>
+    <div class="pillar-wrapper bot-l5"><svg class="pillar-svg" viewBox="0 0 100 200" xmlns="http://www.w3.org/2000/svg"><polygon points="20,200 80,200 65,160 35,160" fill="#997A15"/><rect x="42" y="100" width="16" height="60" fill="#D4AF37"/><polygon points="35,100 65,100 75,115 25,115" fill="#997A15"/><polygon points="20,40 80,40 90,100 10,100" fill="rgba(212,175,55,0.3)" stroke="#D4AF37" stroke-width="4"/><path d="M30,30 Q50,0 70,30 Z" fill="#D4AF37"/><rect x="25" y="30" width="50" height="10" rx="4" fill="#997A15"/><circle cx="50" cy="75" r="16" fill="#FDF0B0"/><path d="M46,55 Q50,40 54,55 Q58,75 50,85 Q42,75 46,55 Z" fill="#FFF"/></svg></div>
+    <div class="pillar-wrapper bot-l6"><svg class="pillar-svg" viewBox="0 0 100 200" xmlns="http://www.w3.org/2000/svg"><polygon points="20,200 80,200 65,160 35,160" fill="#997A15"/><rect x="42" y="100" width="16" height="60" fill="#D4AF37"/><polygon points="35,100 65,100 75,115 25,115" fill="#997A15"/><polygon points="20,40 80,40 90,100 10,100" fill="rgba(212,175,55,0.3)" stroke="#D4AF37" stroke-width="4"/><path d="M30,30 Q50,0 70,30 Z" fill="#D4AF37"/><rect x="25" y="30" width="50" height="10" rx="4" fill="#997A15"/><circle cx="50" cy="75" r="16" fill="#FDF0B0"/><path d="M46,55 Q50,40 54,55 Q58,75 50,85 Q42,75 46,55 Z" fill="#FFF"/></svg></div>
+
+    <button id="btn-fullscreen" onclick="toggleFullScreen()" title="ขยายเต็มจอ">⛶</button>
+
+    <div id="home-screen" class="screen">
+        <h2 style="color: var(--gold-main); font-size: 3.5rem; margin-bottom: -10px; letter-spacing: 2px;">✨ กิจกรรมรำลึกเมาลิดนบี ✨</h2>
+        <h1>ยินดีต้อนรับสู่บูท<br>สันติธรรมวิทยามูลนิธิ</h1>
+        <h2 style="margin-top: 15px;">มาร่วมทดสอบความจำ ตามรอยจริยธรรมนบี (ซ.ล.)</h2>
+        <div class="btn-group">
+            <button class="btn-mode-1" onclick="chooseMode(1)">👤 โหมดท้าทายเวลา (1 คน)</button>
+            <button class="btn-mode-2" onclick="chooseMode(2)">👥 โหมดประลองความจำ (2 คน)</button>
+        </div>
+    </div>
+
+    <div id="setup-screen" class="screen">
+        <h1 id="setup-title">เลือกระดับความยาก</h1>
+        <div id="diff-buttons" class="btn-group"></div>
+        <button class="btn-back" onclick="goHome()">⬅ กลับหน้าหลัก</button>
+    </div>
+
+    <div id="game-area">
+        <div id="status-bar"></div>
+        <div id="game-board"></div>
+        <div id="controls-container">
+            <button id="btn-start" class="btn-start-play" onclick="beginShuffleSequence()">▶ เริ่มลุยเลย!</button>
+            <button id="btn-giveup" class="btn-giveup" onclick="giveUpGame()" style="display: none;">🛑 ขอยอมแพ้</button>
+        </div>
+    </div>
+
+    <div id="result-screen" class="screen" style="position: absolute; top:0; left:0;">
+        <h1 id="result-message">มาชาอัลลอฮ์!</h1>
+        <div id="sub-message" style="display: flex; flex-direction: column; align-items: center; justify-content: center;"></div>
+        <button class="btn-mode-1" style="margin-top: 30px;" onclick="goHome()">🏠 กลับหน้าหลัก</button>
+    </div>
+
+    <script>
+        function toggleFullScreen() {
+            if (!document.fullscreenElement && !document.mozFullScreenElement && !document.webkitFullscreenElement && !document.msFullscreenElement ) {  
+                if (document.documentElement.requestFullscreen) { document.documentElement.requestFullscreen(); } 
+                else if (document.documentElement.webkitRequestFullscreen) { document.documentElement.webkitRequestFullscreen(Element.ALLOW_KEYBOARD_INPUT); }
+            } else {
+                if (document.exitFullscreen) { document.exitFullscreen(); } 
+                else if (document.webkitExitFullscreen) { document.webkitExitFullscreen(); }
+            }
+        }
+
+        function playSound(audioId) {
+            const audioEl = document.getElementById(audioId);
+            if (audioEl) { audioEl.currentTime = 0; audioEl.play().catch(e => console.log("รอการคลิก")); }
+        }
+
+        function stopSound(audioId) {
+            const audioEl = document.getElementById(audioId);
+            if (audioEl) { audioEl.pause(); audioEl.currentTime = 0; }
+        }
+
+        const allIcons = [ 'logo.png', 'img1.jpg', 'img2.jpg', 'img3.jpg', 'img4.jpg', 'img5.jpg', 'img6.jpg', 'img7.jpg' ]; 
+        let gameMode = 1, currentPlayer = 1, matchedCount = 0, totalPairsRequired = 0;
+        let firstCard = null, secondCard = null, lockBoard = true, allCardElements = []; 
+        let timerInterval, timeLeft = 0, gameActive = false;
+        let gameSettings = { time: 0 };
+
+        function setHomeBackground() { 
+            document.body.style.background = "linear-gradient(to bottom, var(--sky-top) 0%, var(--sky-mid) 40%, var(--sky-horizon) 75%, var(--sky-glow) 100%)"; 
+        }
+
+        function clearTenseWarning() {
+            const statusBar = document.getElementById('status-bar');
+            if(statusBar) statusBar.classList.remove('tense-warning');
+            stopSound('sfx-tick');
+        }
+
+        function goHome() {
+            clearInterval(timerInterval); setHomeBackground(); gameActive = false;
+            clearTenseWarning();
+            firstCard = null; secondCard = null; matchedCount = 0;
+            document.getElementById('game-area').style.display = 'none';
+            document.getElementById('setup-screen').style.display = 'none';
+            document.getElementById('result-screen').style.display = 'none';
+            document.getElementById('home-screen').style.display = 'flex';
+        }
+
+        function chooseMode(mode) {
+            const dummyAudio = document.getElementById('sfx-correct'); dummyAudio.load(); 
+            gameMode = mode;
+            document.getElementById('home-screen').style.display = 'none';
+            document.getElementById('setup-screen').style.display = 'flex';
+            
+            const btnContainer = document.getElementById('diff-buttons');
+            if (gameMode === 1) {
+                document.getElementById('setup-title').innerText = "โหมดเล่นคนเดียว";
+                btnContainer.innerHTML = `
+                    <button class="btn-diff" onclick="prepareGame(4, 4, 2, 30)">🟢 ง่าย (30 วิ)</button>
+                    <button class="btn-diff" onclick="prepareGame(6, 4, 3, 60)">🟡 กลาง (60 วิ)</button>
+                    <button class="btn-diff" onclick="prepareGame(8, 4, 4, 90)">🔴 ยาก (90 วิ)</button>
+                `;
+            } else {
+                document.getElementById('setup-title').innerText = "โหมดเล่น 2 คน (สลับตา)";
+                btnContainer.innerHTML = `
+                    <button class="btn-diff" onclick="prepareGame(4, 4, 2, 0)">🟢 4 คู่ (กระดานเล็ก)</button>
+                    <button class="btn-diff" onclick="prepareGame(6, 4, 3, 0)">🟡 6 คู่ (กระดานกลาง)</button>
+                    <button class="btn-diff" onclick="prepareGame(8, 4, 4, 0)">🔴 8 คู่ (กระดานใหญ่)</button>
+                `;
+            }
+        }
+
+        function prepareGame(pairs, cols, rows, time) {
+            document.getElementById('setup-screen').style.display = 'none';
+            document.getElementById('game-area').style.display = 'flex'; 
+            
+            const btnStart = document.getElementById('btn-start');
+            const btnGiveup = document.getElementById('btn-giveup');
+            btnStart.style.display = 'inline-block'; btnGiveup.style.display = 'none';
+
+            clearTenseWarning(); 
+
+            const statusBar = document.getElementById('status-bar');
+            statusBar.innerText = "✨ พร้อมแล้วกดปุ่มด้านล่าง ✨";
+            statusBar.style.color = "var(--gold-main)";
+            setHomeBackground(); 
+
+            gameSettings.time = time;
+            totalPairsRequired = pairs; matchedCount = 0; currentPlayer = 1;
+            allCardElements = []; lockBoard = true; gameActive = false;
+            firstCard = null; secondCard = null; 
+
+            const selectedIcons = allIcons.slice(0, pairs);
+            initBoard(selectedIcons, cols, rows);
+        }
+
+        function initBoard(icons, cols, rows) {
+            const board = document.getElementById('game-board');
+            board.style.gridTemplateColumns = `repeat(${cols}, var(--card-size))`;
+            board.style.gridTemplateRows = `repeat(${rows}, var(--card-size))`;
+            board.innerHTML = '';
+            board.style.opacity = '1';
+
+            let cardsData = [...icons, ...icons];
+            
+            cardsData.forEach(icon => {
+                const card = document.createElement('div');
+                card.classList.add('card');
+                card.dataset.icon = icon;
+                card.innerHTML = `<img src="${icon}" onerror="this.src='logo.png'" style="display:none; width:85%; height:85%; object-fit:contain; border-radius:12px; z-index:2; transform: rotateY(180deg);">`;
+                
+                card.addEventListener('click', handleCardClick);
+                allCardElements.push(card);
+                board.appendChild(card);
+            });
+        }
+
+        function beginShuffleSequence() {
+            playSound('sfx-correct'); 
+            document.getElementById('btn-start').style.display = 'none'; 
+            
+            const statusBar = document.getElementById('status-bar');
+            statusBar.innerText = "👀 จดจำตำแหน่งไพ่ให้ดี! 👀";
+
+            allCardElements.forEach(c => {
+                c.classList.add('flipped');
+                c.querySelector('img').style.display = 'block'; 
+            });
+
+            setTimeout(() => {
+                allCardElements.forEach(c => {
+                    c.classList.remove('flipped');
+                    c.querySelector('img').style.display = 'none'; 
+                });
+
+                statusBar.innerText = "🌪️ กำลังสับไพ่... 🌪️";
+                const board = document.getElementById('game-board');
+                
+                board.style.opacity = '0';
+                
+                setTimeout(() => {
+                    allCardElements.sort(() => Math.random() - 0.5);
+                    allCardElements.forEach(c => board.appendChild(c));
+                    
+                    setTimeout(() => {
+                        board.style.opacity = '1';
+                        
+                        setTimeout(() => {
+                            gameActive = true; lockBoard = false;
+                            document.getElementById('btn-giveup').style.display = 'inline-block'; 
+
+                            if (gameMode === 1) startTimer(gameSettings.time);
+                            else updateTurnUI();
+                        }, 400);
+
+                    }, 50); 
+                }, 400); 
+
+            }, 3000); 
+        }
+
+        function handleCardClick() {
+            if (!gameActive || lockBoard || this === firstCard || this.classList.contains('matched')) return;
+
+            this.classList.add('flipped');
+            this.querySelector('img').style.display = 'block';
+
+            if (!firstCard) { firstCard = this; return; }
+
+            secondCard = this; lockBoard = true; checkMatch();
+        }
+
+        function checkMatch() {
+            if (firstCard.dataset.icon === secondCard.dataset.icon) {
+                playSound('sfx-correct');
+                firstCard.classList.add('matched'); secondCard.classList.add('matched');
+                matchedCount++;
+
+                if (matchedCount === totalPairsRequired) {
+                    setTimeout(() => endGame(gameMode === 1 ? 'win-1p' : 'win-2p'), 600);
+                } else {
+                    firstCard = null; secondCard = null; lockBoard = false;
+                }
+            } else {
+                playSound('sfx-wrong');
+                firstCard.classList.add('error'); secondCard.classList.add('error');
+
+                setTimeout(() => {
+                    allCardElements.forEach(c => { 
+                        c.classList.remove('flipped', 'matched', 'error'); 
+                        c.querySelector('img').style.display = 'none'; 
+                    });
+                    matchedCount = 0; 
+                    if (gameMode === 2) switchTurn();
+                    firstCard = null; secondCard = null; lockBoard = false;
+                }, 1200);
+            }
+        }
+
+        function startTimer(seconds) {
+            timeLeft = seconds;
+            const statusBar = document.getElementById('status-bar');
+            statusBar.innerText = `⏳ เวลาเหลือ: ${timeLeft} วินาที`;
+            statusBar.style.color = "var(--gold-light)";
+            clearTenseWarning(); 
+            
+            clearInterval(timerInterval);
+            timerInterval = setInterval(() => {
+                timeLeft--;
+                statusBar.innerText = `⏳ เวลาเหลือ: ${timeLeft} วินาที`;
+                
+                if(timeLeft <= 10 && timeLeft > 0) { 
+                    statusBar.classList.add('tense-warning');
+                    if (timeLeft === 10) playSound('sfx-tick'); 
+                }
+
+                if (timeLeft <= 0) {
+                    clearInterval(timerInterval);
+                    clearTenseWarning(); 
+                    endGame('timeout');
+                }
+            }, 1000);
+        }
+
+        function switchTurn() {
+            currentPlayer = currentPlayer === 1 ? 2 : 1; updateTurnUI();
+        }
+
+        function updateTurnUI() {
+            const statusBar = document.getElementById('status-bar');
+            const body = document.body;
+            
+            if (currentPlayer === 1) {
+                statusBar.innerText = "🔴 ตาของ: ผู้เล่น 1 (ฝั่งแดง)";
+                statusBar.style.color = "var(--p1-text)"; 
+                body.style.background = "linear-gradient(to bottom, var(--sky-top) 0%, #1a080c 40%, #4a1525 80%, #7a203a 100%)"; 
+            } else {
+                statusBar.innerText = "🔵 ตาของ: ผู้เล่น 2 (ฝั่งน้ำเงิน)";
+                statusBar.style.color = "var(--p2-text)"; 
+                body.style.background = "linear-gradient(to bottom, var(--sky-top) 0%, #071021 40%, #0d2040 80%, #1a386b 100%)"; 
+            }
+        }
+
+        function giveUpGame() {
+            if (!gameActive) return;
+            clearInterval(timerInterval); playSound('sfx-gameover');
+            clearTenseWarning(); 
+            
+            const resultScreen = document.getElementById('result-screen');
+            const resultTitle = document.getElementById('result-message');
+            const subMsg = document.getElementById('sub-message');
+
+            resultTitle.innerText = "ไม่เป็นไรครับ คนเก่ง!";
+            resultTitle.style.color = "var(--gold-main)";
+            subMsg.innerHTML = `
+                <p class="dua-text">رَبِّ زِدْنِي عِلْمًا</p>
+                <p class="dua-translate">"โอ้พระผู้อภิบาลของข้าพระองค์ โปรดเพิ่มพูนความรู้แก่ข้าพระองค์ด้วยเถิด"</p>
+                <p class="result-detail">อินชาอัลลอฮ์ โอกาสหน้ามาร่วมสนุกกันใหม่นะครับ<br>รับของที่ระลึกจากพี่ๆ สตาฟได้เลย</p>
+            `;
+            resultScreen.style.display = 'flex';
+        }
+
+        function endGame(result) {
+            gameActive = false; clearInterval(timerInterval);
+            clearTenseWarning(); 
+
+            const resultScreen = document.getElementById('result-screen');
+            const resultTitle = document.getElementById('result-message');
+            const subMsg = document.getElementById('sub-message');
+            
+            resultScreen.style.display = 'flex'; 
+
+            if (result === 'win-1p') {
+                playSound('sfx-win');
+                resultTitle.innerText = "อัลฮัมดุลิลลาห์! ยอดเยี่ยมมาก"; resultTitle.style.color = "var(--gold-main)";
+                subMsg.innerHTML = `<p class="result-detail">ใช้เวลาไป ${parseInt(gameSettings.time) - timeLeft} วินาที<br>เก่งมากครับ รับรางวัลได้เลย!</p>`;
+            } else if (result === 'timeout') {
+                playSound('sfx-gameover');
+                resultTitle.innerText = "⏰ หมดเวลาซะแล้ว!"; resultTitle.style.color = "#FFCDD2";
+                subMsg.innerHTML = `
+                    <p class="dua-text">رَبِّ زِدْنِي عِلْمًا</p>
+                    <p class="dua-translate">"โอ้พระผู้อภิบาลของข้าพระองค์ โปรดเพิ่มพูนความรู้แก่ข้าพระองค์ด้วยเถิด"</p>
+                    <p class="result-detail">อัลลอฮ์ทรงรักผู้ที่พยายาม ลองกลับมาเล่นใหม่นะครับ</p>
+                `;
+            } else if (result === 'win-2p') {
+                playSound('sfx-win');
+                resultTitle.innerText = `🎉 ผู้เล่นที่ ${currentPlayer} ชนะ! 🎉`;
+                resultTitle.style.color = currentPlayer === 1 ? "var(--p1-text)" : "var(--p2-text)";
+                subMsg.innerHTML = `<p class="result-detail">ความจำเฉียบคมมาก สามารถฉกฉวยโอกาสได้สำเร็จ<br>รับรางวัลได้เลยครับ!</p>`;
+            }
+        }
+    </script>
+</body>
+</html>
